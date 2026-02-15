@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, Loader, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader, Star, Pin } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ProjectsPage() {
@@ -28,7 +28,8 @@ export default function ProjectsPage() {
   };
 
   const featuredProjects = allProjects.filter(p => p.featured);
-  const regularProjects = allProjects.filter(p => !p.featured);
+  const pinnedProjects = allProjects.filter(p => p.pinned);
+  const regularProjects = allProjects.filter(p => !p.featured && !p.pinned);
 
   const deleteProject = async (id) => {
     if (!confirm('Are you sure?')) return;
@@ -44,20 +45,18 @@ export default function ProjectsPage() {
   };
 
   const toggleFeatured = async (projectId, currentFeatured) => {
-    // Check if trying to add more than 3 featured projects
     if (!currentFeatured && featuredProjects.length >= 3) {
       alert('You can only have 3 featured projects. Remove one first!');
       return;
     }
 
-    setToggling(projectId);
+    setToggling({ id: projectId, type: 'featured' });
     try {
       await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/projects/${projectId}`,
         { featured: !currentFeatured }
       );
       
-      // Update local state
       setAllProjects(allProjects.map(p => 
         p._id === projectId ? { ...p, featured: !currentFeatured } : p
       ));
@@ -71,11 +70,31 @@ export default function ProjectsPage() {
     }
   };
 
-  const ProjectRow = ({ project, isFeatured = false }) => (
-    <motion.tr 
+  const togglePinned = async (projectId, currentPinned) => {
+    setToggling({ id: projectId, type: 'pinned' });
+    try {
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/projects/${projectId}`,
+        { pinned: !currentPinned }
+      );
+      
+      setAllProjects(allProjects.map(p => 
+        p._id === projectId ? { ...p, pinned: !currentPinned } : p
+      ));
+      
+      console.log(`✅ Project ${projectId} pinned status toggled`);
+    } catch (error) {
+      console.error('Error toggling pinned:', error);
+      alert('Error updating project');
+    } finally {
+      setToggling(null);
+    }
+  };
+
+  const ProjectRow = ({ project }) => (
+    <tr 
+      key={project._id}
       className="border-b border-gray-800 hover:bg-gray-900/50"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
     >
       <td className="py-4 px-6">
         <div className="flex items-center gap-3">
@@ -93,27 +112,50 @@ export default function ProjectsPage() {
         </div>
       </td>
       <td className="py-4 px-6">
-        {isFeatured && (
-          <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-semibold flex items-center gap-1 w-fit">
-            <Star size={14} fill="currentColor" />
-            Featured
-          </span>
-        )}
+        <div className="flex gap-2">
+          {project.featured && (
+            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs font-semibold flex items-center gap-1">
+              <Star size={12} fill="currentColor" />
+              Featured
+            </span>
+          )}
+          {project.pinned && (
+            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs font-semibold flex items-center gap-1">
+              <Pin size={12} fill="currentColor" />
+              Pinned
+            </span>
+          )}
+        </div>
       </td>
       <td className="py-4 px-6 flex gap-2">
         <motion.button
-          onClick={() => toggleFeatured(project._id, isFeatured)}
-          disabled={toggling === project._id}
+          onClick={() => toggleFeatured(project._id, project.featured)}
+          disabled={toggling?.id === project._id && toggling?.type === 'featured'}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           className={`p-2 rounded transition ${
-            isFeatured 
+            project.featured 
               ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
               : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-          } ${toggling === project._id ? 'opacity-50' : ''}`}
-          title={isFeatured ? 'Remove from featured' : 'Add to featured'}
+          } ${toggling?.id === project._id && toggling?.type === 'featured' ? 'opacity-50' : ''}`}
+          title={project.featured ? 'Remove from featured' : 'Add to featured (max 3)'}
         >
-          <Star size={18} fill={isFeatured ? 'currentColor' : 'none'} />
+          <Star size={18} fill={project.featured ? 'currentColor' : 'none'} />
+        </motion.button>
+        
+        <motion.button
+          onClick={() => togglePinned(project._id, project.pinned)}
+          disabled={toggling?.id === project._id && toggling?.type === 'pinned'}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          className={`p-2 rounded transition ${
+            project.pinned 
+              ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
+              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+          } ${toggling?.id === project._id && toggling?.type === 'pinned' ? 'opacity-50' : ''}`}
+          title={project.pinned ? 'Unpin from top' : 'Pin to top of projects page'}
+        >
+          <Pin size={18} fill={project.pinned ? 'currentColor' : 'none'} />
         </motion.button>
       </td>
       <td className="py-4 px-6 flex gap-3">
@@ -129,7 +171,7 @@ export default function ProjectsPage() {
           <Trash2 size={18} />
         </button>
       </td>
-    </motion.tr>
+    </tr>
   );
 
   return (
@@ -158,6 +200,40 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="space-y-8">
+          {/* Pinned Projects Section */}
+          {pinnedProjects.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-900 border-2 border-blue-500/50 rounded-lg p-6"
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <Pin size={24} className="text-blue-400" fill="currentColor" />
+                <h2 className="text-2xl font-bold text-white">
+                  Pinned Projects ({pinnedProjects.length})
+                </h2>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      <th className="text-left py-4 px-6 text-gray-400">Project</th>
+                      <th className="text-left py-4 px-6 text-gray-400">Status</th>
+                      <th className="text-left py-4 px-6 text-gray-400">Actions</th>
+                      <th className="text-left py-4 px-6 text-gray-400">Edit/Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pinnedProjects.map((project) => (
+                      <ProjectRow key={project._id} project={project} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+
           {/* Featured Projects Section */}
           {featuredProjects.length > 0 && (
             <motion.div
@@ -179,11 +255,12 @@ export default function ProjectsPage() {
                       <th className="text-left py-4 px-6 text-gray-400">Project</th>
                       <th className="text-left py-4 px-6 text-gray-400">Status</th>
                       <th className="text-left py-4 px-6 text-gray-400">Actions</th>
+                      <th className="text-left py-4 px-6 text-gray-400">Edit/Delete</th>
                     </tr>
                   </thead>
                   <tbody>
                     {featuredProjects.map((project) => (
-                      <ProjectRow key={project._id} project={project} isFeatured={true} />
+                      <ProjectRow key={project._id} project={project} />
                     ))}
                   </tbody>
                 </table>
@@ -208,69 +285,13 @@ export default function ProjectsPage() {
                   <tr className="border-b border-gray-800">
                     <th className="text-left py-4 px-6 text-gray-400">Project</th>
                     <th className="text-left py-4 px-6 text-gray-400">Status</th>
-                    <th className="text-left py-4 px-6 text-gray-400">Pin</th>
                     <th className="text-left py-4 px-6 text-gray-400">Actions</th>
+                    <th className="text-left py-4 px-6 text-gray-400">Edit/Delete</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allProjects.map((project) => (
-                    <tr 
-                      key={project._id}
-                      className="border-b border-gray-800 hover:bg-gray-900/50"
-                    >
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          {project.thumbnail && (
-                            <img 
-                              src={project.thumbnail} 
-                              alt={project.title} 
-                              className="w-12 h-12 object-cover rounded border border-gray-800"
-                            />
-                          )}
-                          <div>
-                            <p className="text-white font-semibold">{project.title}</p>
-                            <p className="text-gray-400 text-sm">{project.category}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        {project.featured && (
-                          <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-semibold flex items-center gap-1 w-fit">
-                            <Star size={14} fill="currentColor" />
-                            Featured
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6">
-                        <motion.button
-                          onClick={() => toggleFeatured(project._id, project.featured)}
-                          disabled={toggling === project._id}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`p-2 rounded transition ${
-                            project.featured 
-                              ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
-                              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                          } ${toggling === project._id ? 'opacity-50' : ''}`}
-                          title={project.featured ? 'Remove from featured' : 'Add to featured'}
-                        >
-                          <Star size={18} fill={project.featured ? 'currentColor' : 'none'} />
-                        </motion.button>
-                      </td>
-                      <td className="py-4 px-6 flex gap-3">
-                        <Link href={`/dashboard/projects/${project._id}/edit`}>
-                          <button className="text-blue-400 hover:text-blue-300 transition">
-                            <Edit2 size={18} />
-                          </button>
-                        </Link>
-                        <button 
-                          onClick={() => deleteProject(project._id)}
-                          className="text-red-400 hover:text-red-300 transition"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
-                    </tr>
+                    <ProjectRow key={project._id} project={project} />
                   ))}
                 </tbody>
               </table>

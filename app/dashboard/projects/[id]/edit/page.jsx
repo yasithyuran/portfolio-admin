@@ -25,6 +25,7 @@ export default function EditProjectPage() {
     liveLink: '',
     githubLink: '',
     featured: false,
+    pinned: false,
   });
   const [tech, setTech] = useState('');
 
@@ -80,7 +81,7 @@ export default function EditProjectPage() {
     });
   };
 
-  // Handle thumbnail - IMPORTANT: Don't pass initialImages again
+  // Handle thumbnail
   const handleThumbnailUpload = (imageUrl) => {
     console.log('🖼️ Thumbnail updated:', imageUrl);
     setFormData(prev => ({
@@ -89,7 +90,7 @@ export default function EditProjectPage() {
     }));
   };
 
-  // Handle gallery images - IMPORTANT: Don't pass initialImages again
+  // Handle gallery images
   const handleImagesUpload = (imageUrls) => {
     console.log('🖼️ Gallery updated:', imageUrls);
     setFormData(prev => ({
@@ -141,7 +142,7 @@ export default function EditProjectPage() {
           <input
             type="text"
             value={formData.title}
-            onChange={(e) => setFormData({...formData, title: e.target.value})}
+            onChange={(e) => setFormData(prev => ({...prev, title: e.target.value}))}
             className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-blue-500"
             required
           />
@@ -156,7 +157,7 @@ export default function EditProjectPage() {
           <label className="block text-white font-semibold mb-2">Description</label>
           <textarea
             value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            onChange={(e) => setFormData(prev => ({...prev, description: e.target.value}))}
             rows="6"
             className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-blue-500"
             required
@@ -249,7 +250,7 @@ export default function EditProjectPage() {
           <label className="block text-white font-semibold mb-2">Category</label>
           <select
             value={formData.category}
-            onChange={(e) => setFormData({...formData, category: e.target.value})}
+            onChange={(e) => setFormData(prev => ({...prev, category: e.target.value}))}
             className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-blue-500"
           >
             <option>Web App</option>
@@ -313,7 +314,7 @@ export default function EditProjectPage() {
             <input
               type="url"
               value={formData.liveLink}
-              onChange={(e) => setFormData({...formData, liveLink: e.target.value})}
+              onChange={(e) => setFormData(prev => ({...prev, liveLink: e.target.value}))}
               className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -322,26 +323,48 @@ export default function EditProjectPage() {
             <input
               type="url"
               value={formData.githubLink}
-              onChange={(e) => setFormData({...formData, githubLink: e.target.value})}
+              onChange={(e) => setFormData(prev => ({...prev, githubLink: e.target.value}))}
               className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-blue-500"
             />
           </div>
         </motion.div>
 
-        {/* Featured Checkbox */}
+        {/* Featured Checkbox - For Homepage */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="flex items-center gap-3 p-4 bg-gray-900 border border-gray-800 rounded-lg"
+          className="flex items-center gap-3 p-4 bg-yellow-900/20 border border-yellow-800 rounded-lg"
         >
           <input
             type="checkbox"
             checked={formData.featured}
-            onChange={(e) => setFormData({...formData, featured: e.target.checked})}
+            onChange={(e) => setFormData(prev => ({...prev, featured: e.target.checked}))}
             className="w-5 h-5 rounded"
           />
-          <label className="text-white font-semibold">Pin this project</label>
+          <div>
+            <label className="text-white font-semibold block">Featured (Show on Homepage)</label>
+            <p className="text-gray-400 text-sm">Max 3 projects can be featured on home page</p>
+          </div>
+        </motion.div>
+
+        {/* Pinned Checkbox - For Projects Page */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85 }}
+          className="flex items-center gap-3 p-4 bg-blue-900/20 border border-blue-800 rounded-lg"
+        >
+          <input
+            type="checkbox"
+            checked={formData.pinned}
+            onChange={(e) => setFormData(prev => ({...prev, pinned: e.target.checked}))}
+            className="w-5 h-5 rounded"
+          />
+          <div>
+            <label className="text-white font-semibold block">Pinned (Show at Top of Projects)</label>
+            <p className="text-gray-400 text-sm">Pinned projects appear first on the projects page</p>
+          </div>
         </motion.div>
 
         {/* Submit Button */}
