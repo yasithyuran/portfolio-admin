@@ -129,17 +129,7 @@ export default function LoginPage() {
           </motion.button>
         </motion.form>
 
-        {/* Demo Credentials */}
-        <motion.div
-          className="mt-6 p-4 bg-blue-900/20 border border-blue-800 rounded-lg text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
-          <p className="text-gray-400 text-sm mb-2">Demo Credentials:</p>
-          <p className="text-blue-400 text-sm">Email: yasithyuran@gmail.com</p>
-          <p className="text-blue-400 text-sm">Password: P@55w0rd</p>
-        </motion.div>
+       
 
         {/* Back to Portfolio Link */}
         <motion.div
